@@ -5,16 +5,11 @@ body {
 #background {
     background-color: #2b622b;
     height: 100vh;
-
-    /* z-index: 0; */
 }
 
 .svgContainer {
-    /* position: absolute;*/
     position: fixed;
     z-index: 0;
-    /* background-color: red; */
-    /* max-height: 100vh; */
 }
 
 .second {
@@ -36,18 +31,15 @@ body {
 }
 
 .cls-2 {
-    /* trying out sending it to css */
-    /* stroke: #fff; */
     stroke-dasharray: 50.748687744140625;
     stroke-dashoffset: 50.748687744140625;
-    /* animation: dash 0.25s linear forwards; */
+    animation: dash 0.25s linear forwards;
 }
 
 .cls-3 {
-    /* stroke: #fff; */
     stroke-dasharray: 55.05485534667969;
     stroke-dashoffset: 55.05485534667969;
-    /* animation: dash 0.25s linear forwards; */
+    animation: dash 0.25s linear forwards;
 }
 
 @keyframes dash {
@@ -57,9 +49,7 @@ body {
 }
 
 .addStroke {
-    /* stroke: #000; */
     stroke: #fff;
-    /* stroke: #80bfff; */
 }
 
 #headerContainer {
@@ -67,20 +57,13 @@ body {
     position: sticky;
     z-index: 5;
     padding: 25px;
-    /* width: 25vw; */
-    /* height: 50px; */
-    /* width: 100vw;
-    height: 100vh; */
     text-align: center;
     min-width: 75px;
     margin: 0 auto;
 }
 
 #header {
-    /* font-family: Helvetica Neue, Helvetica, Arial, sans-serif; */
-    font-family: Futura;
+    font-family: "Muli", sans-serif;
     font-size: 36px;
-    font-style: italic;
     padding: 30px;
-    /* font-weight: bold; */
 }
