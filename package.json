@@ -1,0 +1,10 @@
+{
+    "name": "rain-js",
+    "version": "1.0.0",
+    "description": "Animated rain effect",
+    "main": "server.js",
+    "dependencies": {
+      "express": "^4.16.4",
+      "svg.js": "^2.7.1"
+    }
+  }
