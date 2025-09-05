@@ -1,11 +1,39 @@
+let rainInterval;
+let isPaused = false;
+
 window.onload = function() {
-    looperFunction();
+    startRain();
+    setupPauseButton();
 };
 
-let looperFunction = () => {
-    window.setInterval(() => {
-        let currentRaindrop = new Raindrop();
-    }, 300);
+let startRain = () => {
+    if (!rainInterval) {
+        rainInterval = window.setInterval(() => {
+            let currentRaindrop = new Raindrop();
+        }, 300);
+    }
+};
+
+let stopRain = () => {
+    if (rainInterval) {
+        window.clearInterval(rainInterval);
+        rainInterval = null;
+    }
+};
+
+let setupPauseButton = () => {
+    const pauseButton = document.getElementById('pauseButton');
+    pauseButton.addEventListener('click', () => {
+        if (isPaused) {
+            startRain();
+            pauseButton.textContent = 'Pause';
+            isPaused = false;
+        } else {
+            stopRain();
+            pauseButton.textContent = 'Play';
+            isPaused = true;
+        }
+    });
 };
 
 function Raindrop() {

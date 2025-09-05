@@ -67,3 +67,26 @@ body {
     font-size: 36px;
     padding: 30px;
 }
+
+.pause-button {
+    position: fixed;
+    bottom: 20vh;
+    left: calc(50% - 50px);
+    z-index: 10;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 2px solid #2b622b;
+    border-radius: 8px;
+    padding: 10px 15px;
+    font-size: 16px;
+    font-family: "Muli", sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.pause-button:hover {
+    background-color: #2b622b;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
