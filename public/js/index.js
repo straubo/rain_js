@@ -180,7 +180,7 @@ function Raindrop() {
       
         el.style.transition = el.style.WebkitTransition = "none";
       
-        // Compute a padded dash so the end-cap can’t peek with thick strokes
+        // Compute a padded dash so the end-cap can't peek with thick strokes
         const strokeW = parseFloat(
           el.getAttribute("stroke-width") || getComputedStyle(el).strokeWidth || "1"
         );
@@ -211,11 +211,17 @@ function Raindrop() {
             "transitionend",
             () => {
             if (classname === "cls-1") {
+                const group = el.parentNode;
                 rainContainer.appendChild(splash1);
                 rainContainer.appendChild(splash2);
                 window.setTimeout(() => {
-                el.classList.remove("addStroke");
-                el.parentNode.remove();
+                    group.style.transition = 'opacity 300ms ease';
+                    group.style.opacity = '0';
+                    const removeAfterFade = () => {
+                            group.removeEventListener('transitionend', removeAfterFade);
+                            if (group && group.parentNode) group.parentNode.removeChild(group);
+                        };
+                      group.addEventListener('transitionend', removeAfterFade);
                 }, 300);
             }},
             { once: true }
