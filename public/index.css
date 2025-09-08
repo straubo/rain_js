@@ -17,6 +17,12 @@ body {
     top: 450px;
 }
 
+.cls-1 { 
+    stroke-linecap: butt;
+    paint-order: stroke fill;
+    shape-rendering: geometricPrecision;
+}
+
 .cls-1,
 .cls-2,
 .cls-3 {
