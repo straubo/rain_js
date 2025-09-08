@@ -10,6 +10,8 @@ body {
 .svgContainer {
     position: fixed;
     z-index: 0;
+    will-change: transform, opacity;
+    contain: layout paint;
 }
 
 .second {

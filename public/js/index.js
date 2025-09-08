@@ -4,6 +4,33 @@ let rainInterval;
 let isPaused = false;
 let isMobile = false; // Local mobile state for performance
 
+// Fade a single raindrop <svg> out, then remove it
+function fadeOutAndRemove(el) {
+    if (!el || !el.parentNode) return;
+  
+    // If it's already fading/transparent, skip
+    const cur = getComputedStyle(el).opacity;
+    if (cur === '0') return;
+  
+    el.style.willChange = 'opacity';
+    el.style.opacity = cur;                // lock current opacity
+    void el.getBoundingClientRect();       // reflow to separate steps
+    el.style.transition = 'opacity 250ms ease';
+    requestAnimationFrame(() => { el.style.opacity = '0'; });
+  
+    const onEnd = (evt) => {
+      if (evt.target !== el || evt.propertyName !== 'opacity') return;
+      el.removeEventListener('transitionend', onEnd);
+      if (el.parentNode) el.parentNode.removeChild(el);
+    };
+    el.addEventListener('transitionend', onEnd);
+};
+  
+  // Fade ALL current raindrops
+function fadeOutAllCurrentDrops() {
+    document.querySelectorAll('.svgContainer').forEach(fadeOutAndRemove);
+};
+
 window.onload = function() {
     setupMobileDetection();
     // Initialize local mobile state
@@ -12,9 +39,20 @@ window.onload = function() {
     const initialInterval = isMobile ? 500 : 300;
     startRain(initialInterval);
     setupPauseButton();
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          // stop creating new ones & fade out any in-flight ones
+          stopRain();
+          fadeOutAllCurrentDrops();
+        } else {
+          // resume at mobile/desktop speed
+          const interval = isMobile ? 500 : 300;
+          startRain(interval);
+        }
+    });
 };
 
-let startRain = (interval = 300) => {
+const startRain = (interval = 300) => {
     if (!rainInterval) {
         rainInterval = window.setInterval(() => {
             let currentRaindrop = new Raindrop();
@@ -22,7 +60,7 @@ let startRain = (interval = 300) => {
     }
 };
 
-let stopRain = () => {
+const stopRain = () => {
     if (rainInterval) {
         window.clearInterval(rainInterval);
         rainInterval = null;
@@ -85,19 +123,19 @@ let setupMobileDetection = () => {
 let setupPauseButton = () => {
     const pauseButton = document.getElementById('pauseButton');
     pauseButton.addEventListener('click', () => {
-        if (isPaused) {
-            // Use mobile-appropriate interval when resuming
-            const interval = isMobile ? 500 : 300;
-            startRain(interval);
-            pauseButton.textContent = 'Pause';
-            isPaused = false;
-        } else {
-            stopRain();
-            pauseButton.textContent = 'Play';
-            isPaused = true;
-        }
+      if (isPaused) {
+        const interval = isMobile ? 500 : 300;
+        startRain(interval);
+        pauseButton.textContent = 'Pause';
+        isPaused = false;
+      } else {
+        stopRain();
+        fadeOutAllCurrentDrops();  // <<< add this line
+        pauseButton.textContent = 'Play';
+        isPaused = true;
+      }
     });
-};
+  };
 
 function Raindrop() {
     const coordinates = [ // placement coords for raindrop
@@ -169,8 +207,9 @@ function Raindrop() {
     this.createRain = () => {
         let rainDiv = rainContainer;
         rainDiv.appendChild(dripLine);
-        rainDiv.style.marginLeft = coordinates[0] + "px";
-        rainDiv.style.marginTop = coordinates[1] + "px";
+        // rainDiv.style.marginLeft = coordinates[0] + "px";
+        // rainDiv.style.marginTop = coordinates[1] + "px";
+        rainDiv.style.transform = `translate(${coordinates[0]}px, ${coordinates[1]}px)`; // GPU-friendly
         document.getElementById("background").appendChild(rainDiv);
         return rainDiv;
     };
@@ -214,16 +253,27 @@ function Raindrop() {
                 const group = el.parentNode;
                 rainContainer.appendChild(splash1);
                 rainContainer.appendChild(splash2);
-                window.setTimeout(() => {
-                    group.style.transition = 'opacity 300ms ease';
-                    group.style.opacity = '0';
-                    const removeAfterFade = () => {
-                            group.removeEventListener('transitionend', removeAfterFade);
-                            if (group && group.parentNode) group.parentNode.removeChild(group);
-                        };
-                      group.addEventListener('transitionend', removeAfterFade);
-                }, 300);
-            }},
+
+                group.style.willChange = 'opacity';
+                group.style.opacity = getComputedStyle(group).opacity || '1';
+              
+                void group.getBoundingClientRect();
+              
+                // Set the transition, then flip opacity in the *next frame*
+                group.style.transition = 'opacity 300ms ease';
+                requestAnimationFrame(() => {
+                  group.style.opacity = '0';
+                });
+              
+                const removeAfterFade = (evt) => {
+                  // Only react to the group's own opacity transition end
+                  if (evt.target !== group || evt.propertyName !== 'opacity') return;
+                  group.removeEventListener('transitionend', removeAfterFade);
+                  if (group.parentNode) group.parentNode.removeChild(group);
+                };
+                group.addEventListener('transitionend', removeAfterFade);
+              }
+        },
             { once: true }
         );
     };
