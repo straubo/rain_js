@@ -17,8 +17,9 @@ body {
     top: 450px;
 }
 
-.cls-1 { 
-    stroke-linecap: butt;
+
+.cls-1, .cls-2, .cls-3 {
+    stroke-linecap: round;
     paint-order: stroke fill;
     shape-rendering: geometricPrecision;
 }
