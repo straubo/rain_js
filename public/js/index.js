@@ -137,42 +137,61 @@ let setupPauseButton = () => {
   };
 
 function Raindrop() {
-    const coordinates = [ // placement coords for raindrop
-        Math.random() * window.innerWidth - 465,
-        (3 * (Math.random() * window.innerHeight)) / 4 - 650,
-    ];
     const rainLineLength = 1352.439268137;
     const drip1Length = 50.748687744140625;
     const drip2Length = 55.05485534667969;
     const lineWeight = isMobile ? 5 : 2
+    // new coordinates calculated here
+    // 1) Pick a target landing point on-screen
+    const w = window.innerWidth  || 1;
+    const h = window.innerHeight || 1;
 
     // scaling functionality
-    const SPLASH_LOCAL_Y = 1119.25;
     // Compute the min/max Y your splash can land at with your spawn formula:
-    const topMin = -650;                                // (3*0)/4 - 650
-    const topMax = (3 * window.innerHeight) / 4 - 650;  // (3*h)/4 - 650
-    const splashYMin = topMin + SPLASH_LOCAL_Y;
-    const splashYMax = topMax + SPLASH_LOCAL_Y;
     const X2_LOCAL = 771.85;   // your line's x2
     const Y2_LOCAL = 1119.25;  // your line's y2 (splash end)
 
-    function clamp01(x){ return Math.min(1, Math.max(0, x)); }
-    function norm01(v, a, b){ return clamp01((v - a) / (b - a)); }
+    // margins so the right end doesn’t clip when scaled
+    const marginLeft   = 20;
+    const marginRight  = 20;
+    const marginTop    = 40;
+    const marginBottom = 40;
 
-    // Smaller when higher on screen, larger near bottom.
-    // `gamma` > 1 exaggerates the difference; try 1.5–2.0
-    this.computeScaleFromSplashY = (
-    splashScreenY,
-    { min = 0.6, max = 1.4, gamma = 1.6 } = {}
-    ) => {
-    let t = norm01(splashScreenY, splashYMin, splashYMax); // 0..1 across your actual band
-    t = Math.pow(t, gamma);                                 // add contrast
-    return min + (max - min) * t;
-    };
+    const targetLandingY = Math.random() * (h - marginTop - marginBottom) + marginTop;
+    // If you also want to constrain where the end lands in X:
+    const targetLandingX = Math.random() * (w - marginLeft - marginRight) + marginLeft;
+
+    // 2) Compute scale from the landing Y (perspective)
+    const scale = computeScaleFromLandingY(targetLandingY, { min: 0.6, max: 1.4, gamma: 1.6 });
+
+    // 3) Solve the translate so the splash end lands exactly at the chosen point
+    const translateY = targetLandingY - (Y2_LOCAL * scale);
+    const translateX = targetLandingX - (X2_LOCAL * scale);
+
+    // end
+    
+    function clamp01(x){ return Math.min(1, Math.max(0, x)); }
+    function norm01(v, a, b){ return clamp01((v - a) / Math.max(1, (b - a))); }
+
+    // Smaller when higher, larger near bottom.
+    // Tune min/max/gamma to taste.
+    function computeScaleFromLandingY(landingY, { min = 0.6, max = 1.4, gamma = 1.6 } = {}) {
+        const h = window.innerHeight || 1;
+
+        // Choose the visible band where you want splashes to land.
+        // Keep some margins so big strokes don’t clip at edges.
+        const marginTop = 40;
+        const marginBottom = 40;
+        const bandMin = marginTop;
+        const bandMax = h - marginBottom;
+
+        let t = norm01(landingY, bandMin, bandMax); // 0..1 within your intended band
+        t = Math.pow(t, gamma);                      // exaggerate contrast if desired
+        return min + (max - min) * t;
+    }
 
     // Then, when you compute scale for this instance:
-    const splashScreenY = coordinates[1] + SPLASH_LOCAL_Y;
-    const scale = this.computeScaleFromSplashY(splashScreenY, { min: 0.6, max: 1.4, gamma: 1.6 });
+    // const scale = this.computeScaleFromSplashY(splashScreenY, { min: 0.6, max: 1.4, gamma: 1.6 });
 
     let rainContainer = document.createElementNS(
         "http://www.w3.org/2000/svg",
@@ -236,7 +255,11 @@ function Raindrop() {
         let rainDiv = rainContainer;
         rainDiv.appendChild(dripLine);
         rainContainer.style.transformOrigin = "0 0"; // so translate is from top-left
-        rainContainer.style.transform = `translate(${coordinates[0]}px, ${coordinates[1]}px) scale(${scale})`;
+        // rainContainer.style.transform = `translate(${coordinates[0]}px, ${coordinates[1]}px) scale(${scale})`;
+        rainContainer.style.transformBox = "fill-box";
+        rainContainer.style.transformOrigin = "0 0";
+        rainContainer.style.transform =
+            `translate(${translateX}px, ${translateY}px) scale(${scale})`;
         document.getElementById("background").appendChild(rainDiv);
         return rainDiv;
     };
