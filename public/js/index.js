@@ -25,17 +25,14 @@ function fadeOutAndRemove(el) {
     };
     el.addEventListener('transitionend', onEnd);
 };
-  
-  // Fade ALL current raindrops
+
 function fadeOutAllCurrentDrops() {
     document.querySelectorAll('.svgContainer').forEach(fadeOutAndRemove);
 };
 
 window.onload = function() {
     setupMobileDetection();
-    // Initialize local mobile state
     isMobile = mobileDetection.getIsMobile();
-    // Start rain with appropriate interval based on mobile detection
     const initialInterval = isMobile ? 500 : 300;
     startRain(initialInterval);
     setupPauseButton();
@@ -55,14 +52,16 @@ window.onload = function() {
 const startRain = (interval = 300) => {
     if (!rainInterval) {
         rainInterval = window.setInterval(() => {
-            let currentRaindrop = new Raindrop();
+            const currentRaindrop = new Raindrop();
         }, interval);
     }
+    console.log('Rain interval started');
 };
 
 const stopRain = () => {
     if (rainInterval) {
         window.clearInterval(rainInterval);
+        console.log('Rain interval stopped');
         rainInterval = null;
     }
 };
@@ -147,6 +146,34 @@ function Raindrop() {
     const drip2Length = 55.05485534667969;
     const lineWeight = isMobile ? 5 : 2
 
+    // scaling functionality
+    const SPLASH_LOCAL_Y = 1119.25;
+    // Compute the min/max Y your splash can land at with your spawn formula:
+    const topMin = -650;                                // (3*0)/4 - 650
+    const topMax = (3 * window.innerHeight) / 4 - 650;  // (3*h)/4 - 650
+    const splashYMin = topMin + SPLASH_LOCAL_Y;
+    const splashYMax = topMax + SPLASH_LOCAL_Y;
+    const X2_LOCAL = 771.85;   // your line's x2
+    const Y2_LOCAL = 1119.25;  // your line's y2 (splash end)
+
+    function clamp01(x){ return Math.min(1, Math.max(0, x)); }
+    function norm01(v, a, b){ return clamp01((v - a) / (b - a)); }
+
+    // Smaller when higher on screen, larger near bottom.
+    // `gamma` > 1 exaggerates the difference; try 1.5–2.0
+    this.computeScaleFromSplashY = (
+    splashScreenY,
+    { min = 0.6, max = 1.4, gamma = 1.6 } = {}
+    ) => {
+    let t = norm01(splashScreenY, splashYMin, splashYMax); // 0..1 across your actual band
+    t = Math.pow(t, gamma);                                 // add contrast
+    return min + (max - min) * t;
+    };
+
+    // Then, when you compute scale for this instance:
+    const splashScreenY = coordinates[1] + SPLASH_LOCAL_Y;
+    const scale = this.computeScaleFromSplashY(splashScreenY, { min: 0.6, max: 1.4, gamma: 1.6 });
+
     let rainContainer = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "svg"
@@ -172,6 +199,7 @@ function Raindrop() {
         rainContainer.setAttribute("width", "600");
         rainContainer.setAttribute("viewBox", "0 0 953 1210");
     };
+
     const rainLine = () => {
         dripLine.classList.add("cls-1");
         dripLine.setAttribute("x1", "7.34");
@@ -207,9 +235,8 @@ function Raindrop() {
     this.createRain = () => {
         let rainDiv = rainContainer;
         rainDiv.appendChild(dripLine);
-        // rainDiv.style.marginLeft = coordinates[0] + "px";
-        // rainDiv.style.marginTop = coordinates[1] + "px";
-        rainDiv.style.transform = `translate(${coordinates[0]}px, ${coordinates[1]}px)`; // GPU-friendly
+        rainContainer.style.transformOrigin = "0 0"; // so translate is from top-left
+        rainContainer.style.transform = `translate(${coordinates[0]}px, ${coordinates[1]}px) scale(${scale})`;
         document.getElementById("background").appendChild(rainDiv);
         return rainDiv;
     };
@@ -260,7 +287,7 @@ function Raindrop() {
                 void group.getBoundingClientRect();
               
                 // Set the transition, then flip opacity in the *next frame*
-                group.style.transition = 'opacity 300ms ease';
+                group.style.transition = 'opacity 700ms ease';
                 requestAnimationFrame(() => {
                   group.style.opacity = '0';
                 });
