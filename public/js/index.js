@@ -3,6 +3,7 @@ import mobileDetection from './mobileDetection.js';
 let rainInterval;
 let isPaused = false;
 let isMobile = false; // Local mobile state for performance
+// let interval = 300; // add this later
 
 // Fade a single raindrop <svg> out, then remove it
 function fadeOutAndRemove(el) {
@@ -43,7 +44,7 @@ window.onload = function() {
           fadeOutAllCurrentDrops();
         } else {
           // resume at mobile/desktop speed
-          const interval = isMobile ? 500 : 300;
+          const interval = isMobile ? 400 : 200;
           startRain(interval);
         }
     });
@@ -140,21 +141,22 @@ function Raindrop() {
     const rainLineLength = 1352.439268137;
     const drip1Length = 50.748687744140625;
     const drip2Length = 55.05485534667969;
-    const lineWeight = isMobile ? 5 : 2
-    // new coordinates calculated here
+    const lineWeight = isMobile ? 12 : 4
+
     // 1) Pick a target landing point on-screen
     const w = window.innerWidth  || 1;
     const h = window.innerHeight || 1;
 
     // scaling functionality
     // Compute the min/max Y your splash can land at with your spawn formula:
-    const X2_LOCAL = 771.85;   // your line's x2
-    const Y2_LOCAL = 1119.25;  // your line's y2 (splash end)
+    // TODO: adjust these values for both desktop and mobile
+    const X2_LOCAL = 571.85;   // your line's x2
+    const Y2_LOCAL = 800;  // your line's y2 (splash end)
 
     // margins so the right end doesn’t clip when scaled
-    const marginLeft   = 20;
-    const marginRight  = 20;
-    const marginTop    = 40;
+    const marginLeft   = isMobile ? 200 : 400;
+    const marginRight  = 0;
+    const marginTop    = isMobile ? 200 : 200; 
     const marginBottom = 40;
 
     const targetLandingY = Math.random() * (h - marginTop - marginBottom) + marginTop;
@@ -162,7 +164,14 @@ function Raindrop() {
     const targetLandingX = Math.random() * (w - marginLeft - marginRight) + marginLeft;
 
     // 2) Compute scale from the landing Y (perspective)
-    const scale = computeScaleFromLandingY(targetLandingY, { min: 0.6, max: 1.4, gamma: 1.6 });
+    // const scale = computeScaleFromLandingY(targetLandingY, { min: 0.6, max: 1.4, gamma: 1.6 });
+    const scale = computeScaleFromLandingY(targetLandingY, { 
+        min: isMobile ? 0.8 : 0.3, 
+        max: 1.4, 
+        gamma: isMobile ? 2 : 1.6,
+        marginTop: marginTop,
+        marginBottom: marginBottom
+    });
 
     // 3) Solve the translate so the splash end lands exactly at the chosen point
     const translateY = targetLandingY - (Y2_LOCAL * scale);
@@ -175,23 +184,17 @@ function Raindrop() {
 
     // Smaller when higher, larger near bottom.
     // Tune min/max/gamma to taste.
-    function computeScaleFromLandingY(landingY, { min = 0.6, max = 1.4, gamma = 1.6 } = {}) {
+    function computeScaleFromLandingY(landingY, { min = 0.6, max = 1.4, gamma = 1.6, marginTop = 40, marginBottom = 40 } = {}) {
         const h = window.innerHeight || 1;
 
-        // Choose the visible band where you want splashes to land.
-        // Keep some margins so big strokes don’t clip at edges.
-        const marginTop = 40;
-        const marginBottom = 40;
+        // Use the passed margins instead of hardcoded ones
         const bandMin = marginTop;
         const bandMax = h - marginBottom;
-
-        let t = norm01(landingY, bandMin, bandMax); // 0..1 within your intended band
-        t = Math.pow(t, gamma);                      // exaggerate contrast if desired
+        
+        let t = norm01(landingY, bandMin, bandMax);
+        t = Math.pow(t, gamma);
         return min + (max - min) * t;
     }
-
-    // Then, when you compute scale for this instance:
-    // const scale = this.computeScaleFromSplashY(splashScreenY, { min: 0.6, max: 1.4, gamma: 1.6 });
 
     let rainContainer = document.createElementNS(
         "http://www.w3.org/2000/svg",
@@ -254,8 +257,7 @@ function Raindrop() {
     this.createRain = () => {
         let rainDiv = rainContainer;
         rainDiv.appendChild(dripLine);
-        rainContainer.style.transformOrigin = "0 0"; // so translate is from top-left
-        // rainContainer.style.transform = `translate(${coordinates[0]}px, ${coordinates[1]}px) scale(${scale})`;
+        rainContainer.style.transformOrigin = "0 0"; // translate is from top-left
         rainContainer.style.transformBox = "fill-box";
         rainContainer.style.transformOrigin = "0 0";
         rainContainer.style.transform =
@@ -316,7 +318,7 @@ function Raindrop() {
                 });
               
                 const removeAfterFade = (evt) => {
-                  // Only react to the group's own opacity transition end
+                  // react to the group's own opacity transition end
                   if (evt.target !== group || evt.propertyName !== 'opacity') return;
                   group.removeEventListener('transitionend', removeAfterFade);
                   if (group.parentNode) group.parentNode.removeChild(group);
